@@ -5,7 +5,7 @@
 src/vuln.php
 
 # SECRETS — retirer src/config.php = TruffleHog bloque (clés AWS en dur)
-#src/config.php
+src/config.php
 
 # Dépendances
 src/vendor/
