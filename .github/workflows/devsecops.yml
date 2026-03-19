@@ -1,0 +1,94 @@
+name: Pipeline DevSecOps (Cours)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  # ----------------------------------------------------------
+  # ÉTAPE 1 : SECRETS (TruffleHog)
+  # ----------------------------------------------------------
+  check-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan des Secrets (TruffleHog)
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+  # ----------------------------------------------------------
+  # ÉTAPE 2 : LINTER (PHPCS)
+  # ----------------------------------------------------------
+  check-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Linter PHP (PHP_CodeSniffer)
+        run: |
+          docker run --rm -v "$(pwd)/src":/data cytopia/phpcs --standard=PSR12 --ignore=vendor/* /data
+
+  # ----------------------------------------------------------
+  # ÉTAPE 3 : SAST (Semgrep)
+  # ----------------------------------------------------------
+  sast-analysis:
+    needs: [check-secrets, check-quality]
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Scan SAST (Semgrep)
+        run: semgrep scan --config=p/php --error --verbose
+
+  # ----------------------------------------------------------
+  # ÉTAPE 4 : SCA (Trivy FS)
+  # ----------------------------------------------------------
+  sca-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Installation des dépendances (Génération du Lock file)
+        run: |
+          docker run --rm -v "$PWD/src":/app composer install --ignore-platform-reqs
+
+      - name: Scan SCA (Trivy FS)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './src'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+
+  # ----------------------------------------------------------
+  # ÉTAPE 5 : INFRASTRUCTURE (Trivy Image)
+  # ----------------------------------------------------------
+  infra-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Build de l'image Docker
+        run: docker build -t devops-web:latest ./src
+
+      - name: Scan Infrastructure (Trivy Image)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          image-ref: 'devops-web:latest'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
