@@ -71,7 +71,8 @@ $search = htmlspecialchars($search_raw, ENT_QUOTES, 'UTF-8');
             <input type="hidden" name="search" value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>">
 
             <label>IP à tester :</label>
-            <input type="text" name="ip" placeholder="ex: 8.8.8.8" value="<?php echo htmlspecialchars($_GET['ip'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+            <?php $ip_val = htmlspecialchars($_GET['ip'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+            <input type="text" name="ip" placeholder="ex: 8.8.8.8" value="<?php echo $ip_val; ?>">
             <button type="submit">Pinger</button>
         </form>
 
