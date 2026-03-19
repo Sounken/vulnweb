@@ -1,10 +1,5 @@
 {
     "require": {
-        "phpmailer/phpmailer": "5.2.18"
-    },
-    "config": {
-        "audit": {
-            "block-insecure": false
-        }
+        "phpmailer/phpmailer": "^6.0"
     }
 }
